@@ -14,21 +14,36 @@ document.addEventListener('DOMContentLoaded', () => {
     let previousOperand = '';
     let operation = null;
     let shouldResetDisplay = false;
-    let isErrorState = false; // **MỚI: Biến để theo dõi trạng thái lỗi**
+    let isErrorState = false;
 
-    // Event listeners for mobile history toggle
-    toggleHistoryBtn.addEventListener('click', () => {
-        historyPanel.classList.add('visible');
-    });
-    closeHistoryBtn.addEventListener('click', () => {
-        historyPanel.classList.remove('visible');
-    });
+    // --- HELPER FUNCTIONS ---
 
-    const updateDisplay = () => { /* ... (giữ nguyên, sao chép ở dưới) ... */ };
-    const logToHistory = (entry) => { /* ... (giữ nguyên, sao chép ở dưới) ... */ };
-    clearHistoryBtn.addEventListener('click', () => { /* ... (giữ nguyên, sao chép ở dưới) ... */ });
+    /**
+     * Updates the calculator's display with the current state.
+     */
+    const updateDisplay = () => {
+        displayCurrent.textContent = currentOperand;
+        if (operation != null) {
+            displayPrevious.textContent = `${previousOperand} ${operation}`;
+        } else if (shouldResetDisplay) {
+            // Clear previous operand display after a calculation is finished
+            displayPrevious.textContent = '';
+        }
+    };
 
-    // --- THAY ĐỔI TRONG HÀM CALCULATE ---
+    /**
+     * Adds a formatted string entry to the history panel.
+     * @param {string} entry - The text to be logged.
+     */
+    const logToHistory = (entry) => {
+        const li = document.createElement('li');
+        li.textContent = entry;
+        historyList.prepend(li);
+    };
+
+    /**
+     * Performs the calculation for binary operations (+, -, *, /).
+     */
     const calculate = () => {
         let result;
         const prev = parseFloat(previousOperand);
@@ -41,10 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
             case '×': result = prev * current; break;
             case '÷':
                 if (current === 0) {
-                    currentOperand = "Cannot divide by zero"; // **Hiển thị lỗi trên màn hình**
-                    isErrorState = true; // **Bật trạng thái lỗi**
-                    displayCurrent.classList.add('error-text'); // **Thêm lớp CSS cho văn bản lỗi**
-                    return; // **Dừng hàm tại đây**
+                    currentOperand = "Cannot divide by zero";
+                    isErrorState = true;
+                    displayCurrent.classList.add('error-text');
+                    return;
                 }
                 result = prev / current;
                 break;
@@ -57,51 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
         previousOperand = '';
     };
 
-    // --- THAY ĐỔI ĐỂ KHÓA MÁY TÍNH KHI CÓ LỖI ---
+    /**
+     * Handles number and decimal inputs from the user.
+     * @param {string} number - The number or decimal point pressed.
+     */
     const handleNumber = (number) => {
-        if (isErrorState) return; // **Không cho nhập số khi đang có lỗi**
-        // ... (phần còn lại của hàm giữ nguyên)
-    };
-    const chooseOperation = (op) => {
-        if (isErrorState) return; // **Không cho chọn phép toán khi có lỗi**
-        // ... (phần còn lại của hàm giữ nguyên)
-    };
-    const handleAction = (action) => {
-        // **Chỉ cho phép nút 'clear' và 'clear-entry' hoạt động khi có lỗi**
-        if (isErrorState && action !== 'clear' && action !== 'clear-entry') {
-            return;
-        }
-        // ... (phần còn lại của hàm giữ nguyên)
-    };
-    buttons.addEventListener('click', (event) => { /* ... (giữ nguyên, sao chép ở dưới) ... */ });
-    updateDisplay();
-
-
-    // --- SAO CHÉP LẠI TOÀN BỘ CÁC HÀM KHÔNG THAY ĐỔI ---
-    // (Bao gồm cả các hàm đã được sửa lỗi ở trên để bạn có thể sao chép một lần duy nhất)
-
-    const updateDisplay_full = () => {
-        displayCurrent.textContent = currentOperand;
-        if (operation != null) {
-            displayPrevious.textContent = `${previousOperand} ${operation}`;
-        } else {
-            if (shouldResetDisplay) {
-                 displayPrevious.textContent = '';
-            }
-        }
-    };
-
-    const logToHistory_full = (entry) => {
-        const li = document.createElement('li');
-        li.textContent = entry;
-        historyList.prepend(li);
-    };
-
-    clearHistoryBtn.addEventListener('click', () => {
-        historyList.innerHTML = '';
-    });
-
-    const handleNumber_full = (number) => {
         if (isErrorState) return;
         if (shouldResetDisplay) {
             currentOperand = '0';
@@ -119,20 +94,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const chooseOperation_full = (op) => {
+    /**
+     * Sets the chosen operation and prepares for the next number input.
+     * @param {string} op - The operator symbol.
+     */
+    const chooseOperation = (op) => {
         if (isErrorState) return;
-        if (currentOperand === '') return;
+        if (currentOperand === '' && operation !== null) return;
         if (previousOperand !== '') {
             calculate();
         }
-        if (isErrorState) return; // Kiểm tra lại sau khi calculate có thể gây lỗi
+        if (isErrorState) return;
         operation = op;
         previousOperand = currentOperand;
         currentOperand = '';
-        shouldResetDisplay = true;
+        shouldResetDisplay = false;
     };
     
-    const handleAction_full = (action) => {
+    /**
+     * Handles non-operator actions like clear, backspace, sqrt, etc.
+     * @param {string} action - The action to perform.
+     */
+    const handleAction = (action) => {
         if (isErrorState && action !== 'clear' && action !== 'clear-entry') {
             return;
         }
@@ -143,44 +126,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentOperand = '0';
                 previousOperand = '';
                 operation = null;
-                isErrorState = false; // **Tắt trạng thái lỗi**
-                displayCurrent.classList.remove('error-text'); // **Xóa lớp CSS lỗi**
+                isErrorState = false;
+                shouldResetDisplay = true;
+                displayCurrent.classList.remove('error-text');
                 break;
             case 'clear-entry':
                 currentOperand = '0';
-                isErrorState = false; // **Tắt trạng thái lỗi**
-                displayCurrent.classList.remove('error-text'); // **Xóa lớp CSS lỗi**
+                isErrorState = false;
+                displayCurrent.classList.remove('error-text');
                 break;
             case 'backspace':
+                if (shouldResetDisplay) return;
                 currentOperand = currentOperand.slice(0, -1) || '0';
                 break;
-            case 'decimal': handleNumber_full('.'); break;
+            case 'decimal': handleNumber('.'); break;
             case 'negate': 
                 currentOperand = (parseFloat(currentOperand) * -1).toString(); 
                 break;
             case 'percentage':
                 currentOperand = (parseFloat(originalOperand) / 100).toString();
-                logToHistory_full(`${originalOperand}% = ${currentOperand}`);
+                logToHistory(`${originalOperand}% = ${currentOperand}`);
                 shouldResetDisplay = true;
                 break;
             case 'sqrt':
                 if (parseFloat(originalOperand) >= 0) {
                     currentOperand = Math.sqrt(parseFloat(originalOperand)).toString();
-                    logToHistory_full(`sqrt(${originalOperand}) = ${currentOperand}`);
+                    logToHistory(`sqrt(${originalOperand}) = ${currentOperand}`);
                     shouldResetDisplay = true;
                 } else {
-                    alert("Invalid input for square root");
+                    currentOperand = "Invalid input";
+                    isErrorState = true;
+                    displayCurrent.classList.add('error-text');
                 }
                 break;
             case 'square':
                 currentOperand = Math.pow(parseFloat(originalOperand), 2).toString();
-                logToHistory_full(`sqr(${originalOperand}) = ${currentOperand}`);
+                logToHistory(`sqr(${originalOperand}) = ${currentOperand}`);
                 shouldResetDisplay = true;
                 break;
             case 'reciprocal':
                 if (parseFloat(originalOperand) !== 0) {
                     currentOperand = (1 / parseFloat(originalOperand)).toString();
-                    logToHistory_full(`1/(${originalOperand}) = ${currentOperand}`);
+                    logToHistory(`1/(${originalOperand}) = ${currentOperand}`);
                     shouldResetDisplay = true;
                 } else {
                     currentOperand = "Cannot divide by zero";
@@ -195,24 +182,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
     };
+    
+    // --- EVENT LISTENERS ---
 
     buttons.addEventListener('click', (event) => {
         const { target } = event;
         if (!target.matches('button')) return;
 
         if (target.classList.contains('number')) {
-            handleNumber_full(target.textContent);
+            handleNumber(target.textContent);
         } else if (target.classList.contains('operator')) {
             if (target.dataset.action === 'equals') {
-                handleAction_full('equals');
+                handleAction('equals');
             } else {
-                chooseOperation_full(target.textContent);
+                chooseOperation(target.textContent);
             }
         } else if (target.classList.contains('func')) {
-            handleAction_full(target.dataset.action);
+            handleAction(target.dataset.action);
         }
-        updateDisplay_full();
+        updateDisplay();
     });
     
-    updateDisplay_full();
+    clearHistoryBtn.addEventListener('click', () => {
+        historyList.innerHTML = '';
+    });
+
+    toggleHistoryBtn.addEventListener('click', () => {
+        historyPanel.classList.add('visible');
+    });
+
+    closeHistoryBtn.addEventListener('click', () => {
+        historyPanel.classList.remove('visible');
+    });
+
+    // Initial display update on page load
+    updateDisplay();
 });
